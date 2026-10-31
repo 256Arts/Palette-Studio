@@ -52,16 +52,57 @@ struct PaletteGridView: View {
     var onDelete: (Int) -> Void
     var onReorder: ([PaletteColor]) -> Void
 
-    @SceneStorage("gridCellSize") private var cellSize: Double = 64
+    /// The pinch zoom, relative to `fittedSize`: 1 is a grid that fills the view.
+    @SceneStorage("gridZoom") private var zoomScale: Double = 1
+    /// The visible area of the scroll view, inside its safe area.
+    @State private var viewport: CGSize = .zero
     @State private var gamutFilter: GamutFilter = .deviceDefault
     @State private var colorVision: ColorVision = .normal
     @GestureState private var pinch: CGFloat = 1
 
     private static let minSize: CGFloat = 44
-    private static let maxSize: CGFloat = 220
+    private static let maxSize: CGFloat = 360
+    private static let spacing: CGFloat = 12
+    /// Roughly what `scenePadding()` insets the grid by on each side.
+    private static let margin: CGFloat = 20
+    /// Of the viewport the fitted grid may fill, leaving the edges some air.
+    private static let fill: CGFloat = 0.92
 
     private var effectiveSize: CGFloat {
-        min(max(CGFloat(cellSize) * pinch, Self.minSize), Self.maxSize)
+        clamped(fittedSize * zoomScale * pinch)
+    }
+
+    private func clamped(_ size: CGFloat) -> CGFloat {
+        min(max(size, Self.minSize), Self.maxSize)
+    }
+
+    /// The largest swatch that fits every color on screen at once, trying each column count. A row's
+    /// labels are reserved at the row's height, which can only overestimate them, so the fit holds.
+    private var fittedSize: CGFloat {
+        let width = (viewport.width - Self.margin * 2) * Self.fill
+        let height = (viewport.height - Self.margin * 2) * Self.fill
+        guard !colors.isEmpty, width > 0, height > 0 else { return 64 }
+        return (1...colors.count).map { columns in
+            let rows = CGFloat((colors.count + columns - 1) / columns)
+            let byWidth = (width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)
+            let rowHeight = (height - Self.spacing * (rows - 1)) / rows
+            return min(byWidth, rowHeight - Self.labelHeight(rowHeight))
+        }
+        .max() ?? 64
+    }
+
+    /// The height a swatch's name and hex lines add below it at the given size.
+    private static func labelHeight(_ size: CGFloat) -> CGFloat {
+        (size >= 96 ? 22 : 0) + (size >= 148 ? 20 : 0)
+    }
+
+    /// Fixed columns rather than adaptive ones, so swatches keep the fitted size instead of stretching
+    /// past it, and a single short row stays centered.
+    private var columns: [GridItem] {
+        let size = effectiveSize
+        let available = max(viewport.width - Self.margin * 2, size)
+        let count = min(max(Int((available + Self.spacing) / (size + Self.spacing)), 1), max(colors.count, 1))
+        return Array(repeating: GridItem(.fixed(size), spacing: Self.spacing), count: count)
     }
     private var showsName: Bool { effectiveSize >= 96 }
     private var showsHex: Bool { effectiveSize >= 148 }
@@ -73,7 +114,7 @@ struct PaletteGridView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: effectiveSize, maximum: effectiveSize * 1.4), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: columns, spacing: Self.spacing) {
                 // Only the OS 27 branch reorders by drag; see `usesManualMoveCommands` for the
                 // fallback, and for how to unwrap this once OS 26 is dropped.
                 if #available(iOS 27, macOS 27, visionOS 27, *) {
@@ -94,6 +135,12 @@ struct PaletteGridView: View {
             .frame(maxWidth: .infinity)
             .animation(.snappy, value: showsName)
             .animation(.snappy, value: showsHex)
+        }
+        .onScrollGeometryChange(for: CGSize.self) { geometry in
+            CGSize(width: geometry.containerSize.width - geometry.contentInsets.leading - geometry.contentInsets.trailing,
+                   height: geometry.containerSize.height - geometry.contentInsets.top - geometry.contentInsets.bottom)
+        } action: { _, size in
+            viewport = size
         }
         .toolbar {
             ToolbarItem {
@@ -210,7 +257,8 @@ struct PaletteGridView: View {
         MagnifyGesture()
             .updating($pinch) { value, state, _ in state = value.magnification }
             .onEnded { value in
-                cellSize = Double(min(max(CGFloat(cellSize) * value.magnification, Self.minSize), Self.maxSize))
+                // Store only the zoom that took effect, so pinching past a limit doesn't bank a reserve.
+                zoomScale = clamped(fittedSize * zoomScale * value.magnification) / fittedSize
             }
     }
 }

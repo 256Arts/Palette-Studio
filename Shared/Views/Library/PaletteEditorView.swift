@@ -226,6 +226,14 @@ struct PaletteEditorView: View {
     }
     #endif
 
+    /// iOS and visionOS forms inset their rows and size their steppers well past the Mac's, so the
+    /// parameters need a wider panel there to keep each label and value on one line.
+    #if os(macOS)
+    private static let inspectorWidth: CGFloat = 360
+    #else
+    private static let inspectorWidth: CGFloat = 420
+    #endif
+
     @ViewBuilder
     private var editor: some View {
         #if os(visionOS)
@@ -233,7 +241,7 @@ struct PaletteEditorView: View {
         HStack(spacing: 0) {
             display
             inspector
-                .frame(width: 360)
+                .frame(width: Self.inspectorWidth)
         }
         #else
         display
@@ -247,7 +255,7 @@ struct PaletteEditorView: View {
                     .presentationDetents([.height(64), .medium, .large], selection: $selectedDetent)
                     .presentationBackgroundInteraction(.enabled)
                     .interactiveDismissDisabled(Self.isPhone)
-                    .inspectorColumnWidth(ideal: 360)
+                    .inspectorColumnWidth(min: Self.inspectorWidth, ideal: Self.inspectorWidth)
                     .onGeometryChange(for: CGFloat.self) {
                         $0.frame(in: .global).minY - $0.safeAreaInsets.top
                     } action: { sheetTop = $0 }

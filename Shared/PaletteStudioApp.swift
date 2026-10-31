@@ -77,9 +77,11 @@ struct PaletteStudioApp: App {
         .commands {
             PaletteCommands()
         }
-        #if os(macOS) || os(visionOS)
         // The window the app should open at: room for the sphere and its inspector side by side.
         // Screenshots deliberately photograph this same size rather than one of their own.
+        #if os(macOS)
+        .defaultSize(width: 880, height: 560)
+        #elseif os(visionOS)
         .defaultSize(width: 1024, height: 640)
         #endif
         #if os(macOS)
