@@ -32,7 +32,7 @@ Note: destinations/platforms are intentionally not pinned here — choose a curr
 
 ## App Store screenshots
 
-`Scripts/screenshots.sh [iphone ipad mac vision]` (no arguments runs all four) drives the app through
+`Scripts/screenshots.sh [iphone duo ipad mac vision]` (no arguments runs all five) drives the app through
 its screens and writes PNGs to `Raw Assets/Screenshots/` as `Phone 6.9 1.png`, `Pad 13 1.png`,
 `Mac 1.png`, `Vision 1.png`. That folder is a symlink out to iCloud, so nothing lands in the repo;
 the hand-made shots it replaced are archived beside them in `Old (Manual)/`.
