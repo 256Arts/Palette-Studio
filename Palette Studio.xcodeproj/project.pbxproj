@@ -494,7 +494,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 2.0;
+				MARKETING_VERSION = 2.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jaydenirwin.palette3d;
 				PRODUCT_NAME = "Palette Studio";
 				SDKROOT = iphoneos;
@@ -532,7 +532,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 2.0;
+				MARKETING_VERSION = 2.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jaydenirwin.palette3d;
 				PRODUCT_NAME = "Palette Studio";
 				SDKROOT = iphoneos;
